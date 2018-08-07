@@ -4,7 +4,7 @@ class File:
     def __init__(self, path, name):
         self.name = name
         self.path = path
-        self.file_object = open(self.path+self.name, mode="r+")
+        self.start = 0
         
     def write(self, text):
         self.file_object.write(text)
@@ -23,12 +23,20 @@ class File:
         return new_obj
     
     def __iter__(self):
-        pass
+        return self
+    
+    def __next__(self):
+
+        with open(self.path + os.path.splitext(self.name)[0] + ".txt", "r") as lines:
+            lines.seek(self.start)
+            text_line = lines.readline()
+            if not text_line:
+                self.start = 0
+                raise StopIteration
+            
+            self.start = lines.tell()
+            return text_line
+
 
     def __str__(self):
-        pass
-
-
-test1 = File("D:/", "test1.txt")
-test2 = File("D:/", "test2.txt")
-test3 = test1+test2
+        return str(self.path + self.name)
