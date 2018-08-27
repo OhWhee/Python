@@ -10,6 +10,12 @@ cur_list = ['AUD', 'AZN', 'GBP', 'AMD', 'BYN', 'BGN', 'BRL', 'HUF', 'HKD', 'DKK'
 
 
 def to_rur(amount, cur):
+    """Converts chosen currency into Russian rubles.
+    amount - amount of currency
+    cur - currency abbreviation (USD, EUR, JPY etc.)
+
+    to_rur(100, USD)
+    """
     date_now = datetime.strftime(datetime.now(), "%Y-%m-%d")
     rates = ExchangeRates(date_now)
     rate = float(rates[cur].value)
