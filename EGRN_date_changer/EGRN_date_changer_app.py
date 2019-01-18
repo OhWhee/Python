@@ -2,6 +2,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 from lxml import etree as ET
 import csv
 import datetime
+import os
 
 
 class Ui_Dialog(object):
@@ -71,6 +72,15 @@ class Ui_Dialog(object):
         self.OwnersBtn.setSizePolicy(sizePolicy)
         self.OwnersBtn.setObjectName("OwnersBtn")
         self.OwnersBtn.clicked.connect(self.saveToCSV)
+        self.ChangeBtn = QtWidgets.QPushButton(Dialog)
+        self.ChangeBtn.setGeometry(QtCore.QRect(300, 100, 173, 20))
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.ChangeBtn.sizePolicy().hasHeightForWidth())
+        self.ChangeBtn.setSizePolicy(sizePolicy)
+        self.ChangeBtn.setObjectName("ChangeBtn")
+        self.ChangeBtn.clicked.connect(self.changeFileNames)
 
         self.retranslateUi(Dialog)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
@@ -82,6 +92,7 @@ class Ui_Dialog(object):
         self.SaveBtn.setText(_translate("Dialog", "Сохранить"))
         self.ResultBtn.setText(_translate("Dialog", "Изменить дату"))
         self.OwnersBtn.setText(_translate("Dialog", "Выгрузить собственников"))
+        self.ChangeBtn.setText(_translate("Dialog", "Переименовать файлы"))
         
     def read_xml(path):
         """Возваращает объект типа xml.etree.ElementTree"""
@@ -119,6 +130,28 @@ class Ui_Dialog(object):
             print('Обработано файлов: '+ str(new_counter) + '/'+str(file_counter))
             new_counter+=1
         return print("Все файлы обработаны")
+    
+    def changeFileNames(self):
+        new_counter = 1
+        for file in self.files:
+            file_counter = len(self.files)
+            print('Обрабатываемый файл: '+str(file))
+            obj = OwnerList(file)
+            save_string = '{}/{}'.format(self.SaveString.text(), obj.address.replace("/", "-"))
+            tree = obj.tree
+            print(save_string)
+            filenumber = ""
+            index = 1
+            new_string = ''
+            while os.path.exists(save_string + "{}.xml".format(filenumber)):
+                filenumber = ' ({})'.format(index)
+                index += 1               
+                print(new_string)
+            new_string = save_string + '{}.xml'.format(filenumber)
+            tree.write(new_string, encoding='UTF-8', xml_declaration=True)
+            print('Обработано файлов: '+ str(new_counter) + '/'+str(file_counter))
+            new_counter+=1
+        return print("Все файлы обработаны")    
     
     def saveToCSV(self):
         save_string = '{}/{}.csv'.format(self.SaveString.text(), self.now.strftime('%d.%m.%Y %H-%M-%S'))
