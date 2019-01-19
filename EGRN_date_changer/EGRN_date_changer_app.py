@@ -3,11 +3,13 @@ from lxml import etree as ET
 import csv
 import datetime
 import os
+import math
 
 
 class Ui_Dialog(object):
     now = datetime.datetime.now()
     files = []
+    initial_step = 0
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
         Dialog.resize(485, 198)
@@ -81,6 +83,9 @@ class Ui_Dialog(object):
         self.ChangeBtn.setSizePolicy(sizePolicy)
         self.ChangeBtn.setObjectName("ChangeBtn")
         self.ChangeBtn.clicked.connect(self.changeFileNames)
+        self.ProgressBar = QtWidgets.QProgressBar(Dialog)
+        self.ProgressBar.setSizePolicy(sizePolicy)
+        self.ProgressBar.setGeometry(QtCore.QRect(10, 150, 450, 20))
 
         self.retranslateUi(Dialog)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
@@ -102,6 +107,7 @@ class Ui_Dialog(object):
                
         
     def openButton(self):
+        self.ProgressBar.setValue(0)
         self.files = []
         self.now = datetime.datetime.now()
         filenames = QtWidgets.QFileDialog.getOpenFileNames(None, filter = "XML (*.xml)")
@@ -113,8 +119,9 @@ class Ui_Dialog(object):
         
     def changeDateButton(self):
         new_counter = 1
+        file_counter = len(self.files)
+        step = 100 / file_counter
         for file in self.files:
-            file_counter = len(self.files)
             print('Обрабатываемый файл: '+str(file))
             try:
                 obj = OwnerList(file)
@@ -129,12 +136,15 @@ class Ui_Dialog(object):
                 print("Беда с тегами в файле: "+str(file))            
             print('Обработано файлов: '+ str(new_counter) + '/'+str(file_counter))
             new_counter+=1
+            self.initial_step += step
+            self.ProgressBar.setValue(math.ceil(self.initial_step))
         return print("Все файлы обработаны")
     
     def changeFileNames(self):
         new_counter = 1
+        file_counter = len(self.files)
+        step = 100 / file_counter
         for file in self.files:
-            file_counter = len(self.files)
             print('Обрабатываемый файл: '+str(file))
             obj = OwnerList(file)
             save_string = '{}/{}'.format(self.SaveString.text(), obj.address.replace("/", "-"))
@@ -151,9 +161,15 @@ class Ui_Dialog(object):
             tree.write(new_string, encoding='UTF-8', xml_declaration=True)
             print('Обработано файлов: '+ str(new_counter) + '/'+str(file_counter))
             new_counter+=1
+            self.initial_step += step
+            self.ProgressBar.setValue(math.ceil(self.initial_step))
+            print(self.initial_step, step)
         return print("Все файлы обработаны")    
     
     def saveToCSV(self):
+        new_counter = 1
+        file_counter = len(self.files)
+        step = 100 / file_counter
         save_string = '{}/{}.csv'.format(self.SaveString.text(), self.now.strftime('%d.%m.%Y %H-%M-%S'))
         for file in self.files:
             try:
@@ -166,7 +182,10 @@ class Ui_Dialog(object):
                 string_to_csv.append(string)
             with open(save_string, 'a', newline='') as csvfile:
                 writer = csv.writer(csvfile, delimiter=';')
-                writer.writerow(string_to_csv)       
+                writer.writerow(string_to_csv) 
+            new_counter += 1
+            self.initial_step += step
+            self.ProgressBar.setValue(math.ceil(self.initial_step))
       
         
 class OwnerList:
