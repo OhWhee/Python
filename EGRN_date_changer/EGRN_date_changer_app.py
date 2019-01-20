@@ -146,21 +146,27 @@ class Ui_Dialog(object):
         step = 100 / file_counter
         for file in self.files:
             print('Обрабатываемый файл: '+str(file))
-            obj = OwnerList(file)
-            save_string = '{}/{}'.format(self.SaveString.text(), obj.address.replace("/", "-"))
-            tree = obj.tree
-            print(save_string)
-            filenumber = ""
-            index = 1
-            new_string = ''
-            while os.path.exists(save_string + "{}.xml".format(filenumber)):
-                filenumber = ' ({})'.format(index)
-                index += 1               
-                print(new_string)
-            new_string = save_string + '{}.xml'.format(filenumber)
-            tree.write(new_string, encoding='UTF-8', xml_declaration=True)
-            print('Обработано файлов: '+ str(new_counter) + '/'+str(file_counter))
-            new_counter+=1
+            try:
+                obj = OwnerList(file)
+                if not os.path.exists('{}/{}'.format(self.SaveString.text(), obj.folderName)):
+                    os.mkdir('{}/{}'.format(self.SaveString.text(), obj.folderName))
+                else:
+                    save_string = '{}/{}/{}'.format(self.SaveString.text(), obj.folderName, obj.address.replace("/", "-"))
+                    tree = obj.tree
+                    print(save_string)
+                    filenumber = ""
+                    index = 1
+                    new_string = ''
+                    while os.path.exists(save_string + "{}.xml".format(filenumber)):
+                        filenumber = ' ({})'.format(index)
+                        index += 1               
+                        print(new_string)
+                    new_string = save_string + '{}.xml'.format(filenumber)
+                    tree.write(new_string, encoding='UTF-8', xml_declaration=True)
+                    print('Обработано файлов: '+ str(new_counter) + '/'+str(file_counter))
+                    new_counter+=1
+            except:
+                print("Возможно ошибка в тэегах. Файл {} не обработан".format(str(file)))
             self.initial_step += step
             self.ProgressBar.setValue(math.ceil(self.initial_step))
             print(self.initial_step, step)
@@ -198,6 +204,7 @@ class OwnerList:
         self.address = self.get_address(self.root)
         self.owners = self.get_owners(self.root)
         self.tree = self.get_tree(self.path)
+        self.folderName = self.make_folder(self.root)
         
             
     def read_xml(self, path):
@@ -236,31 +243,37 @@ class OwnerList:
         house_number = ""
         flat_type = ""
         flat_number = ""
-         
-        for t in root.findall('.//{urn://x-artefacts-rosreestr-ru/outgoing/kpoks/4.0.1}Address'):
-            for i in t.getchildren():
-                if i.tag == "{urn://x-artefacts-rosreestr-ru/commons/complex-types/address-output/4.0.1}Street":
-                    street, street_type = i.attrib["Name"], i.attrib["Type"]
-                if i.tag == "{urn://x-artefacts-rosreestr-ru/commons/complex-types/address-output/4.0.1}Level1":
-                    house_type, house_number = i.attrib["Type"], i.attrib["Value"]
-                if i.tag == "{urn://x-artefacts-rosreestr-ru/commons/complex-types/address-output/4.0.1}Apartment":
-                    flat_type, flat_number = i.attrib["Type"], i.attrib["Value"]
-            return r'{}. {}, {}. {}, {}. {}'.format(street_type, street, house_type, house_number, flat_type, flat_number)
+        
+        try:
+            for t in root.findall('.//{urn://x-artefacts-rosreestr-ru/outgoing/kpoks/4.0.1}Address'):
+                for i in t.getchildren():
+                    if i.tag == "{urn://x-artefacts-rosreestr-ru/commons/complex-types/address-output/4.0.1}Street":
+                        street, street_type = i.attrib["Name"], i.attrib["Type"]
+                    if i.tag == "{urn://x-artefacts-rosreestr-ru/commons/complex-types/address-output/4.0.1}Level1":
+                        house_type, house_number = i.attrib["Type"], i.attrib["Value"]
+                    if i.tag == "{urn://x-artefacts-rosreestr-ru/commons/complex-types/address-output/4.0.1}Apartment":
+                        flat_type, flat_number = i.attrib["Type"], i.attrib["Value"]
+                return r'{}. {}, {}. {}, {}. {}'.format(street_type, street, house_type, house_number, flat_type, flat_number)
+        except:
+            print("Возможно ошибка в тэгах")
 
 
     def replaceDate(self, root, date):
-        for t in root.findall(".//{urn://x-artefacts-rosreestr-ru/outgoing/kpoks/4.0.1}ReestrExtract"):
-            for i in t.getchildren():
-                if i.tag == '{urn://x-artefacts-rosreestr-ru/outgoing/kpoks/4.0.1}DeclarAttribute':
-                    print(i.attrib['ExtractDate'], i.attrib['RequeryDate'])
-                    i.attrib['ExtractDate'] = date
-                    i.attrib['RequeryDate'] = date
-                    print(i.attrib['ExtractDate'], i.attrib['RequeryDate'])
-        for t in root.findall(".//{urn://x-artefacts-rosreestr-ru/outgoing/kpoks/4.0.1}HeadContent"):
+        try:
+            for t in root.findall(".//{urn://x-artefacts-rosreestr-ru/outgoing/kpoks/4.0.1}ReestrExtract"):
                 for i in t.getchildren():
-                    if i.tag == '{urn://x-artefacts-rosreestr-ru/outgoing/kpoks/4.0.1}Content':
-                        i.text = 'На основании запроса от {} г., поступившего на рассмотрение {} г., сообщаем, что согласно записям Единого государственного реестра недвижимости:'.format(date, date)
-                        print(i.text)
+                    if i.tag == '{urn://x-artefacts-rosreestr-ru/outgoing/kpoks/4.0.1}DeclarAttribute':
+                        print(i.attrib['ExtractDate'], i.attrib['RequeryDate'])
+                        i.attrib['ExtractDate'] = date
+                        i.attrib['RequeryDate'] = date
+                        print(i.attrib['ExtractDate'], i.attrib['RequeryDate'])
+            for t in root.findall(".//{urn://x-artefacts-rosreestr-ru/outgoing/kpoks/4.0.1}HeadContent"):
+                    for i in t.getchildren():
+                        if i.tag == '{urn://x-artefacts-rosreestr-ru/outgoing/kpoks/4.0.1}Content':
+                            i.text = 'На основании запроса от {} г., поступившего на рассмотрение {} г., сообщаем, что согласно записям Единого государственного реестра недвижимости:'.format(date, date)
+                            print(i.text)
+        except:
+            print("Возможно ошибка в тэгах")
 
     def get_owners(self, root):
         owners = []
@@ -272,6 +285,20 @@ class OwnerList:
             return owners
         except:
             owners.append("Отсутствует в выписке")
+            
+    def make_folder(self, root):
+        street = ""
+        house_number = ""
+        try:
+            for t in root.findall('.//{urn://x-artefacts-rosreestr-ru/outgoing/kpoks/4.0.1}Address'):
+                for i in t.getchildren():
+                    if i.tag == "{urn://x-artefacts-rosreestr-ru/commons/complex-types/address-output/4.0.1}Street":
+                        street = i.attrib["Name"]
+                    if i.tag == "{urn://x-artefacts-rosreestr-ru/commons/complex-types/address-output/4.0.1}Level1":
+                        house_number = i.attrib["Value"]
+                return r'{} {}'.format(street, house_number.replace("/", "-"))
+        except:
+            print("Возможно ошибка в тэгах")
  
            
     
