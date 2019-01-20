@@ -141,6 +141,8 @@ class Ui_Dialog(object):
         return print("Все файлы обработаны")
     
     def changeFileNames(self):
+        self.ProgressBar.setValue(0)
+        self.initial_step = 0
         new_counter = 1
         file_counter = len(self.files)
         step = 100 / file_counter
@@ -150,23 +152,22 @@ class Ui_Dialog(object):
                 obj = OwnerList(file)
                 if not os.path.exists('{}/{}'.format(self.SaveString.text(), obj.folderName)):
                     os.mkdir('{}/{}'.format(self.SaveString.text(), obj.folderName))
-                else:
-                    save_string = '{}/{}/{}'.format(self.SaveString.text(), obj.folderName, obj.address.replace("/", "-"))
-                    tree = obj.tree
-                    print(save_string)
-                    filenumber = ""
-                    index = 1
-                    new_string = ''
-                    while os.path.exists(save_string + "{}.xml".format(filenumber)):
-                        filenumber = ' ({})'.format(index)
-                        index += 1               
-                        print(new_string)
-                    new_string = save_string + '{}.xml'.format(filenumber)
-                    tree.write(new_string, encoding='UTF-8', xml_declaration=True)
-                    print('Обработано файлов: '+ str(new_counter) + '/'+str(file_counter))
-                    new_counter+=1
+                save_string = '{}/{}/{}'.format(self.SaveString.text(), obj.folderName, obj.address.replace("/", "-"))
+                tree = obj.tree
+                print(save_string)
+                filenumber = ""
+                index = 1
+                new_string = ''
+                while os.path.exists(save_string + "{}.xml".format(filenumber)):
+                    filenumber = ' ({})'.format(index)
+                    index += 1               
+                    print(new_string)
+                new_string = save_string + '{}.xml'.format(filenumber)
+                tree.write(new_string, encoding='UTF-8', xml_declaration=True)
+                print('Обработано файлов: '+ str(new_counter) + '/'+str(file_counter))
+                new_counter+=1
             except:
-                print("Возможно ошибка в тэегах. Файл {} не обработан".format(str(file)))
+                print("Возможно ошибка в тэгах. Файл {} не обработан".format(str(file)))
             self.initial_step += step
             self.ProgressBar.setValue(math.ceil(self.initial_step))
             print(self.initial_step, step)
@@ -243,6 +244,8 @@ class OwnerList:
         house_number = ""
         flat_type = ""
         flat_number = ""
+        structure = ""
+        structure_number = ""
         
         try:
             for t in root.findall('.//{urn://x-artefacts-rosreestr-ru/outgoing/kpoks/4.0.1}Address'):
@@ -251,9 +254,11 @@ class OwnerList:
                         street, street_type = i.attrib["Name"], i.attrib["Type"]
                     if i.tag == "{urn://x-artefacts-rosreestr-ru/commons/complex-types/address-output/4.0.1}Level1":
                         house_type, house_number = i.attrib["Type"], i.attrib["Value"]
+                    if i.tag == "{urn://x-artefacts-rosreestr-ru/commons/complex-types/address-output/4.0.1}Level3":
+                        structure, structure_number = i.attrib["Type"], i.attrib["Value"]
                     if i.tag == "{urn://x-artefacts-rosreestr-ru/commons/complex-types/address-output/4.0.1}Apartment":
                         flat_type, flat_number = i.attrib["Type"], i.attrib["Value"]
-                return r'{}. {}, {}. {}, {}. {}'.format(street_type, street, house_type, house_number, flat_type, flat_number)
+                return r'{}. {}, {}. {}, {}. {}'.format(street_type, street, house_type, house_number, flat_type, flat_number) if structure == "" and structure_number == "" else r'{}. {}, {}. {}, {} {} {}. {}'.format(street_type, street, house_type, house_number, structure, structure_number.replace("/", "-"), flat_type, flat_number)
         except:
             print("Возможно ошибка в тэгах")
 
@@ -289,6 +294,8 @@ class OwnerList:
     def make_folder(self, root):
         street = ""
         house_number = ""
+        structure = ""
+        structure_number = ""
         try:
             for t in root.findall('.//{urn://x-artefacts-rosreestr-ru/outgoing/kpoks/4.0.1}Address'):
                 for i in t.getchildren():
@@ -296,7 +303,9 @@ class OwnerList:
                         street = i.attrib["Name"]
                     if i.tag == "{urn://x-artefacts-rosreestr-ru/commons/complex-types/address-output/4.0.1}Level1":
                         house_number = i.attrib["Value"]
-                return r'{} {}'.format(street, house_number.replace("/", "-"))
+                    if i.tag == "{urn://x-artefacts-rosreestr-ru/commons/complex-types/address-output/4.0.1}Level3":
+                        structure, structure_number = i.attrib["Type"], i.attrib["Value"]
+                return r'{} {}'.format(street, house_number.replace("/", "-")) if structure == "" and structure_number == "" else r'{} {} {} {}'.format(street, house_number.replace("/", "-"), structure, structure_number.replace("/", "-"))
         except:
             print("Возможно ошибка в тэгах")
  
