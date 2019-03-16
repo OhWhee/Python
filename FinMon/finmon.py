@@ -252,8 +252,3 @@ def insertDataIntoTables(tables):
     tables[2].rows[12].cells[1].text = debtor_reqs.post_adress
 
 f.close()
-
-
-    
-    
-    
